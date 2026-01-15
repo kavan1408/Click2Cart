@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Click2Cart</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <style>
+    header { background:#000; color:#fff; padding:20px; text-align:center;}
+    header h1 { margin:0; font-size:2em;}
+    nav { margin-top:10px;}
+    nav a { color:white; margin:0 15px; text-decoration:none; font-weight:600; padding:5px 10px; border-radius:5px; transition:0.3s;}
+    nav a:hover, nav a.active { background:#fff; color:#000;}
+    main { padding:30px 20px;}
+    section { display:none; background:#fff; margin:20px auto; padding:25px; border-radius:10px; max-width:1000px; border:1px solid #ccc;}
+    section.active { display:block;}
+    .products-container { display:flex; flex-wrap:wrap; justify-content:center;}
+    .product { border-radius:10px; border:1px solid #000; margin:15px; padding:20px; width:220px; text-align:center; transition: transform 0.3s ease, box-shadow 0.3s ease;}
+    .product:hover { transform:translateY(-5px); box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+    button { background:#000; color:#fff; border:none; padding:10px 15px; cursor:pointer; border-radius:5px; font-weight:bold; transition:all 0.3s ease; margin:5px 0;}
+    button:hover { background:#444;}
+    table { width:95%; margin:20px auto; border-collapse:collapse; border-radius:8px; overflow:hidden;}
+    table, th, td { border:1px solid #000; padding:12px; text-align:center;}
+    th { background:#000; color:#fff;}
+    input[type="number"] { width:60px; text-align:center; padding:5px; border-radius:5px; border:1px solid #000;}
+    .cart-message, #purchaseMessage { text-align:center; color:#000; font-weight:bold; margin-top:10px;}
+    #cartBuyNowBtn { background:#000; color:#fff; border:none; padding:12px 20px; font-size:16px; font-weight:bold; border-radius:5px; cursor:pointer; margin:15px auto; display:block; transition:all 0.3s ease;}
+    #cartBuyNowBtn:hover { background:#444;}
+    #checkoutModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; justify-content:center; align-items:center; z-index:1000; overflow:auto; transition:0.3s;}
+    #checkoutModal.active { display:flex;}
+    #checkoutContent { background:#fff; padding:30px; border-radius:10px; width:90%; max-width:500px; text-align:left; position:relative;}
+    #checkoutContent h2 { margin-top:0;}
+    #checkoutContent input, #checkoutContent textarea { width:100%; padding:10px; margin:8px 0; border:1px solid #000; border-radius:5px;}
+    #checkoutContent button { width:100%; margin-top:10px;}
+    #closeModal { position:absolute; top:10px; right:15px; cursor:pointer; font-size:20px; font-weight:bold;}
+    footer { background:#000; color:#fff; padding:20px; text-align:center; margin-top:30px;}
+
+    /* Login Modal */
+    #loginModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index:2000; }
+    #loginContent { background:#fff; padding:30px; border-radius:10px; width:90%; max-width:400px; text-align:center; position:relative; }
+    #loginContent input { width:90%; padding:10px; margin:8px 0; border:1px solid #000; border-radius:5px; }
+    #loginContent button { width:95%; padding:10px; margin-top:10px; }
+    #loginMessage { color:red; font-weight:bold; margin-top:10px; }
+
+    #logoutBtn { display:none; position:fixed; top:10px; right:10px; padding:8px 12px; background:#ff0000; color:#fff; border:none; border-radius:5px; cursor:pointer; z-index:1500;}
+  </style>
+</head>
+<body>
+
+<!-- Login Modal -->
+<div id="loginModal">
+  <div id="loginContent">
+    <h2>Login</h2>
+    <input type="text" id="loginUsername" placeholder="Username" required><br>
+    <input type="password" id="loginPassword" placeholder="Password" required><br>
+    <button id="loginBtn">Login</button>
+    <p id="loginMessage"></p>
+  </div>
+</div>
+
+<button id="logoutBtn">Logout</button>
+
+<!-- Main App Content -->
+<div id="appContent" style="display:none;">
+  <header>
+    <div class="header-logo">
+      <img src="shopping-cart-svgrepo-com.svg" alt="Click2Cart Logo" id="logo" />
+      <h1>Click2Cart</h1>
+    </div>
+
+    <nav>
+      <a href="#" data-page="home" class="nav-link active">Home</a>
+      <a href="#" data-page="cart" class="nav-link">Cart <span id="cartCount">0</span></a>
+      <a href="#" data-page="about" class="nav-link">About</a>
+      <a href="#" data-page="contact" class="nav-link">Contact</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="active">
+      <h2>Products</h2>
+      <div class="products-container" id="productsContainer"></div>
+    </section>
+
+    <section id="cart">
+      <h2>Your Cart</h2>
+      <table id="cartTable">
+        <tr>
+          <th>Product</th>
+          <th>Price (₹)</th>
+          <th>Quantity</th>
+          <th>Total (₹)</th>
+          <th>Action</th>
+        </tr>
+      </table>
+      <h3 id="grandTotal">Grand Total: ₹0</h3>
+      <button id="cartBuyNowBtn">Buy Now</button>
+      <p id="cartMessage" class="cart-message"></p>
+    </section>
+
+    <section id="about">
+      <h2>About Us</h2>
+      <p>Welcome to our Online Shopping Cart!</p>
+      <p>We combine <b>OOP, HTML, CSS, JavaScript</b> to create a smooth shopping experience.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact Us</h2>
+      <ul>
+        <li>📧 Email: <a href="mailto:support@click2cart.com">support@click2cart.com</a></li>
+        <li>📞 Phone: <a href="tel:+911234567890">+91 12345 67890</a></li>
+        <li>🏢 Address: 123, Click2Cart Street, Mumbai, Maharashtra, India</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Click2Cart Online Shopping Cart</p>
+  </footer>
+</div>
+
+<div id="checkoutModal">
+  <div id="checkoutContent">
+    <span id="closeModal">&times;</span>
+    <h2>Checkout</h2>
+    <pre id="checkoutProduct"></pre>
+    <input type="text" id="customerName" placeholder="Full Name" required>
+    <input type="email" id="customerEmail" placeholder="Email" required>
+    <input type="tel" id="customerPhone" placeholder="Phone" required>
+    <textarea id="customerAddress" placeholder="Delivery Address" rows="4" required></textarea>
+    <button id="confirmPurchase">Confirm Purchase</button>
+    <p id="purchaseMessage"></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script>
+  // ====== LOGIN SYSTEM ======
+  const admins = [{username:"admin", password:"admin123"}]; // you can add more users
+  const loginModalEl = document.getElementById("loginModal");
+  const loginBtnEl = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  function showLogin(){ loginModalEl.style.display="flex"; }
+  function hideLogin(){ loginModalEl.style.display="none"; }
+
+  loginBtnEl.addEventListener("click", ()=>{
+    const username=document.getElementById("loginUsername").value.trim();
+    const password=document.getElementById("loginPassword").value.trim();
+    const user=admins.find(u=>u.username===username && u.password===password);
+    if(user){
+      localStorage.setItem("loggedInUser", username);
+      hideLogin();
+      document.getElementById("appContent").style.display="block"; 
+      logoutBtn.style.display="block";
+    } else {
+      document.getElementById("loginMessage").innerText="❌ Invalid username or password";
+    }
+  });
+
+  logoutBtn.addEventListener("click", ()=>{
+    localStorage.removeItem("loggedInUser");
+    document.getElementById("appContent").style.display="none"; 
+    logoutBtn.style.display="none";
+    showLogin();
+  });
+
+  window.addEventListener("load", ()=>{
+    const loggedInUser=localStorage.getItem("loggedInUser");
+    if(!loggedInUser){ 
+      showLogin();
+      document.getElementById("appContent").style.display="none";
+    } else { 
+      document.getElementById("appContent").style.display="block";
+      logoutBtn.style.display="block";
+    }
+  });
+
+  // ====== PRODUCT & CART SYSTEM ======
+  class Product {
+    constructor(name, price, images){
+      this.name = name;
+      this.price = price;
+      this.images = images;
+    }
+
+    render() {
+      const div = document.createElement('div');
+      div.className = 'product';
+      div.dataset.name = this.name;
+      div.dataset.price = this.price;
+      div.innerHTML = `
+        <div class="swiper product-slider">
+          <div class="swiper-wrapper">
+            ${this.images.map(img => `<div class="swiper-slide"><img src="${img}" alt="${this.name}"></div>`).join('')}
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+        <p id="product_name">${this.name}</p>
+        <p>Price: ₹${this.price}</p>
+        <button class="add-cart-btn">Add to Cart</button>
+        <button class="buy-now-btn
+        <button class="buy-now-btn">Buy Now</button>
+      `;
+      return div;
+    }
+  }
+
+  class Cart {
+    constructor(){
+      this.items = JSON.parse(localStorage.getItem("cart")) || [];
+    }
+
+    addItem(name, price){
+      let item = this.items.find(p=>p.name===name);
+      if(item) item.quantity++;
+      else this.items.push({name, price, quantity:1});
+      this.save();
+      this.updateCartCount();
+    }
+
+    removeItem(name){
+      this.items = this.items.filter(i=>i.name!==name);
+      this.save();
+      this.updateCartCount();
+      this.displayCart();
+    }
+
+    updateQuantity(name, qty){
+      const item = this.items.find(p=>p.name===name);
+      if(item) item.quantity = Math.max(1, parseInt(qty));
+      this.save();
+      this.displayCart();
+    }
+
+    save(){
+      localStorage.setItem("cart", JSON.stringify(this.items));
+    }
+
+    updateCartCount(){
+      document.getElementById("cartCount").innerText = this.items.reduce((sum,i)=>sum+i.quantity,0);
+    }
+
+    displayCart(){
+      const table = document.getElementById("cartTable");
+      table.innerHTML = `<tr>
+        <th>Product</th><th>Price (₹)</th><th>Quantity</th><th>Total (₹)</th><th>Action</th>
+      </tr>`;
+      let grandTotal = 0;
+      this.items.forEach(item=>{
+        const total = item.price*item.quantity;
+        grandTotal += total;
+        const row = table.insertRow();
+        row.innerHTML = `
+          <td>${item.name}</td>
+          <td>₹${item.price}</td>
+          <td><input type="number" min="1" value="${item.quantity}" class="qty-input"></td>
+          <td>₹${total}</td>
+          <td><button class="remove-btn">Remove</button></td>
+        `;
+        row.querySelector(".qty-input").addEventListener("change", e=>{
+          this.updateQuantity(item.name,e.target.value);
+        });
+        row.querySelector(".remove-btn").addEventListener("click", ()=>{
+          this.removeItem(item.name);
+        });
+      });
+      document.getElementById("grandTotal").innerText = "Grand Total: ₹"+grandTotal;
+    }
+  }
+
+  const productsData = [
+    new Product("Oral B Pro 1000",1300,["toothbrush_1.jpg","toothbrush_2.jpg","toothbrush_3.jpg"]),
+    new Product("Jean Paul Gaultier Le Beau Le Parfum",8000,["perfume_1.jpg","perfum_2.jpg","perfume_3.jpg"]),
+    new Product("Dior Sauvage Eau de Toilette",10999,["suvage_1.jpg","suvage_2.jpg"]),
+    new Product("Plix Pineapple Smooth Skin Juicy Body Wash",699,["plix_1.jpg","plix_2.jpg","plix_3.jpg"]),
+    new Product("Caresmith CHARGESPORT Massage Gun",2999,["masssage_1.jpg","massage_2.jpg","massage_3.jpg"]),
+    new Product("BASED Texture Powder",2350,["based_1.jpg","based_2.jpg","based_3.jpg"]),
+    new Product("Chanel Bleu de Chanel Parfum",5370,["bleuchanel_1.jpg","bleuchanel_2.jpg","bleuchanel_3.jpg"]),
+    new Product("Garnier Bright Complete Vitamin C Serum",360,["vitaminc_1.jpg","vitaminc_2.jpg","vitaminc_3.jpg"]),
+    new Product("TRESemmé Keratin Smooth Hair Mask",550,["hairmask_1.jpg","hairmask_2.jpg"]),
+    new Product("Pilgrim Advanced Hair Growth Serum",630,["pilgrim_1.jpg","pilgrim_2.jpg"]),
+    new Product("Cetaphil Gentle Skin Cleanser",400,["Cleanser_1.jpg","cleanser_2.jpg","cleanser_3.jpg"]),
+    new Product("Minimalist SPF 50 Sunscreen",2999,["minimalist_1.jpg","minimalist_2.jpg","minimalist_3.jpg"]),
+  ];
+
+  const cart = new Cart();
+
+  // Render products
+  const container = document.getElementById("productsContainer");
+  productsData.forEach(p=>container.appendChild(p.render()));
+
+  // Navigation
+  document.querySelectorAll(".nav-link").forEach(link => {
+    link.addEventListener("click", e=>{
+      e.preventDefault();
+      document.querySelectorAll("main section").forEach(s=>s.classList.remove("active"));
+      document.getElementById(link.dataset.page).classList.add("active");
+      document.querySelectorAll(".nav-link").forEach(l=>l.classList.remove("active"));
+      link.classList.add("active");
+      if(link.dataset.page==="cart") cart.displayCart();
+    });
+  });
+
+  // Initialize Swiper sliders
+  function initSliders(){
+    document.querySelectorAll('.product-slider').forEach(slider=>{
+      if(slider.swiper) slider.swiper.destroy(true,true);
+      new Swiper(slider,{
+        loop:true,
+        autoplay:{delay:3000,disableOnInteraction:false},
+        pagination:{el:slider.querySelector('.swiper-pagination'),clickable:true}
+      });
+    });
+  }
+  initSliders();
+
+  // Add to Cart
+  document.body.addEventListener("click", e=>{
+    if(e.target.classList.contains("add-cart-btn")){
+      const prod = e.target.closest(".product");
+      cart.addItem(prod.dataset.name, parseInt(prod.dataset.price));
+      showTemporaryMessage(prod.dataset.name+" added to cart!");
+    }
+    if(e.target.classList.contains("buy-now-btn")){
+      const prod = e.target.closest(".product");
+      cart.addItem(prod.dataset.name, parseInt(prod.dataset.price));
+      cart.displayCart();
+      showCheckoutModal();
+    }
+  });
+
+  function showTemporaryMessage(msg){
+    const el = document.getElementById("cartMessage");
+    el.innerText = msg;
+    setTimeout(()=>el.innerText="",2000);
+  }
+
+  // Checkout Modal
+  const checkoutModal = document.getElementById("checkoutModal");
+  const checkoutProduct = document.getElementById("checkoutProduct");
+  document.getElementById("closeModal").addEventListener("click", ()=>checkoutModal.classList.remove("active"));
+
+  function showCheckoutModal(){
+    if(cart.items.length===0){ alert("Cart is empty!"); return;}
+    let list="Products in your cart:\n";
+    cart.items.forEach(item=>list+=`${item.name} x ${item.quantity} = ₹${item.price*item.quantity}\n`);
+    checkoutProduct.textContent=list;
+    checkoutModal.classList.add("active");
+  }
+
+  document.getElementById("cartBuyNowBtn").addEventListener("click", showCheckoutModal);
+
+  // Confirm Purchase
+  document.getElementById("confirmPurchase").addEventListener("click", ()=>{
+    const name=document.getElementById("customerName").value.trim();
+    const email=document.getElementById("customerEmail").value.trim();
+    const phone=document.getElementById("customerPhone").value.trim();
+    const address=document.getElementById("customerAddress").value.trim();
+
+    if(!name||!email||!phone||!address){ alert("Please fill all details!"); return;}
+
+    document.getElementById("purchaseMessage").innerText="✅ Order placed successfully! Thank you.";
+
+    cart.items.length=0;
+    cart.save();
+    cart.updateCartCount();
+    cart.displayCart();
+
+    document.getElementById("customerName").value="";
+    document.getElementById("customerEmail").value="";
+    document.getElementById("customerPhone").value="";
+    document.getElementById("customerAddress").value="";
+
+    setTimeout(()=>{
+      checkoutModal.classList.remove("active");
+      document.getElementById("purchaseMessage").innerText="";
+      showPage("home");
+      initSliders();
+    },3000);
+  });
+
+  function showPage(pageId){
+    document.querySelectorAll("main section").forEach(s=>s.classList.remove("active"));
+    document.getElementById(pageId).classList.add("active");
+    document.querySelectorAll(".nav-link").forEach(l=>l.classList.remove("active"));
+    document.querySelector(`.nav-link[data-page="${pageId}"]`).classList.add("active");
+  }
+
+  cart.updateCartCount();
+</script>
+</body>
+</html>
